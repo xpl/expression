@@ -102,6 +102,11 @@ Life = _.extends (Viewport, {
 		})))
 	},
 	initUserInput: function () {
+		var removePrompt = function () {
+			$('.draw-prompt').remove ()
+			$(document).unbind ('click', removePrompt)
+		}
+		$(document).click (removePrompt)
 		$(this.canvas).mousewheel ($.proxy (this.onZoom, this))
 		$(this.canvas).mousedown ($.proxy (function (e) {
 			if (!e.button) {
@@ -312,7 +317,6 @@ Life = _.extends (Viewport, {
 		}, this))
 	},
 	onPaintStart: function (e) {
-		$('.draw-prompt').remove ()
 		this.paintFrom = this.paintTo = this.eventPoint (e)
 		this.eraseMode = e.shiftKey
 		this.shouldPaint = true
