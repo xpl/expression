@@ -1,0 +1,502 @@
+<html>
+	<head>
+		<title>Cellular Expression</title>
+        <meta http-equiv="Content-Type" content="charset=utf-8">
+        <meta property="og:title" content="Cellular Expression" />
+		<meta property="og:type" content="website" />
+		<meta property="og:description" content="An interactive paint application driven by cellular automation." />
+		<meta property="og:url" content="http://xpl.github.com/expression/" />
+		<meta property="og:image" content="http://xpl.github.com/expression/preview.jpg" />
+		<meta property="og:site_name" content="Cellular Expression" />
+		<meta property="fb:admins" content="1174148385" />
+		<link rel="image_src" href="http://xpl.github.com/expression/preview.jpg" />
+		<link rel="stylesheet" type="text/css" href="jquery-ui-1.8.16.custom.css" />
+		<link rel="stylesheet" type="text/css" href="bootstrap/css/bootstrap.min.css" />
+		<link rel="stylesheet" type="text/css" href="main.css" />
+		<script src="jquery-1.8.2.min.js"></script>
+		<script src="jquery-ui-1.9.0.custom.min.js"></script>
+		<script src="jquery.mousewheel.js"></script>
+		<script src="underscore-min-1.4.2.js"></script>
+		<script src="bootstrap/js/bootstrap.min.js"></script>
+		<script src="gl-matrix-min.js"></script>
+		<script src="util.js"></script>
+		<script src="3d.js"></script>
+		<script src="main.js"></script>
+		<!-- shaders -->
+		<script id="cell-random-noise-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision mediump float;
+		    varying vec2 fragmentPosition;
+		    uniform vec2 seed;
+		    float rand (vec2 co){
+    			return fract (sin (dot (co.xy ,vec2 (12.9898,78.233))) * 43758.5453);
+			}
+		    void main (void) {
+		    	float noise = rand (fragmentPosition + seed);
+		    	float alive = noise > 0.6 ? 1.0 : 0.0;
+		        gl_FragColor = vec4 (alive, 1, noise, 1.0);
+		    }
+		</script>
+		<script id="cell-update-from-bitmap-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision mediump float;
+		    varying vec2 texCoord;
+		    uniform sampler2D source;
+		    vec3 RGBToHSL(vec3 color) {
+				vec3 hsl;
+				float fmin = min(min(color.r, color.g), color.b);
+				float fmax = max(max(color.r, color.g), color.b);
+				float delta = fmax - fmin;
+				hsl.z = (fmax + fmin) / 2.0;
+				if (delta == 0.0) {
+					hsl.x = 0.0;
+					hsl.y = 0.0;
+				}
+				else {
+					if (hsl.z < 0.5)
+						hsl.y = delta / (fmax + fmin); // Saturation
+					else
+						hsl.y = delta / (2.0 - fmax - fmin); // Saturation
+					float deltaR = (((fmax - color.r) / 6.0) + (delta / 2.0)) / delta;
+					float deltaG = (((fmax - color.g) / 6.0) + (delta / 2.0)) / delta;
+					float deltaB = (((fmax - color.b) / 6.0) + (delta / 2.0)) / delta;
+					if (color.r == fmax )
+						hsl.x = deltaB - deltaG; // Hue
+					else if (color.g == fmax)
+						hsl.x = (1.0 / 3.0) + deltaR - deltaB; // Hue
+					else if (color.b == fmax)
+						hsl.x = (2.0 / 3.0) + deltaG - deltaR; // Hue
+					if (hsl.x < 0.0)
+						hsl.x += 1.0; // Hue
+					else if (hsl.x > 1.0)
+						hsl.x -= 1.0; // Hue
+				}
+				return hsl;
+			}
+		    void main (void) {
+		    	vec4 sourceColor = texture2D (source, texCoord);
+		    	vec3 hsl = RGBToHSL (sourceColor.xyz);
+		    	float alive = hsl.z > 0.5 ? 1.0 : 0.0;
+		        gl_FragColor = vec4 (alive, hsl.y, hsl.x, 1.0);
+		    }
+		</script>
+		<script id="cell-iteration-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision highp float;
+		    varying vec2 texCoord;
+		    uniform sampler2D previousStep;
+		    uniform vec2 screenSpace;
+		    uniform sampler2D rules;
+		    vec4 pixelAt (vec2 offset) {
+		    	return texture2D (previousStep, texCoord + offset * screenSpace);
+		    }
+		    /* circular interpolation */
+		    float clerp (float a, float b) {
+		    	float distance = a - b;
+		    	float absDistance = abs (distance);
+		    	if (absDistance > 0.5) {
+		    		distance = sign (distance) * (absDistance - 1.0);
+		    	}
+		    	return fract (distance * 0.5 + b);
+		    }
+		    float blendCell (vec4 a, float b) {
+		    	if (a.x > 0.5) {
+		    		return b < 0.0 ? a.z : clerp (a.z, b);
+		    	} else {
+		    		return b;
+		    	}
+		    }
+		    vec4 step (vec4 cell, sampler2D previousStep, sampler2D rules) {
+		    	vec4 n1 = pixelAt (vec2 (-1.0, -1.0));
+		    	vec4 n2 = pixelAt (vec2 ( 0.0, -1.0));
+		    	vec4 n3 = pixelAt (vec2 ( 1.0, -1.0));
+		    	vec4 n4 = pixelAt (vec2 ( 1.0,  0.0));
+		    	vec4 n5 = pixelAt (vec2 ( 1.0,  1.0));
+		    	vec4 n6 = pixelAt (vec2 ( 0.0,  1.0));
+		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
+		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
+		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, 0.0));
+		    	if (cell.x < 0.9 && decision.g > 0.0) {
+			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
+			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
+		    		return vec4 (1.0, 1.0, color, 1.0);
+		    	} else if (cell.x > 0.0 && decision.r > 0.0) {
+		    		return vec4 (0.0, 1.0, cell.z, 1.0);
+		    	} else {
+		    		return cell * vec4 (1.0, 0.994, 1.0, 1.0);
+		    	}
+		    }
+		    void main (void) {
+		    	gl_FragColor = step (pixelAt (vec2 ( 0,  0)), previousStep, rules);
+		    }
+		</script>
+		<script id="cell-copy-brush-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision mediump float;
+		    varying vec2 fragmentPosition;
+		    uniform vec2 origin;
+		    uniform vec2 scale;
+		    uniform sampler2D source;
+		    void main (void) {
+		        gl_FragColor = texture2D (source, (fragmentPosition*scale + origin + 1.0) * 0.5);
+		    }
+		</script>
+		<script id="cell-bake-brush-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision mediump float;
+		    varying vec2 fragmentPosition;
+		    varying vec2 texCoord;
+		    uniform sampler2D cells;
+		    uniform sampler2D brush;
+		    uniform sampler2D rules;
+		    uniform vec2 screenSpace;
+		    uniform vec2 origin;
+		    uniform vec2 scale;
+		    uniform vec3 color;
+		    uniform bool animate;
+			vec4 pixelAt (vec2 offset) {
+		    	return texture2D (cells, texCoord + offset * screenSpace);
+		    }
+		    /* circular interpolation */
+		    float clerp (float a, float b) {
+		    	float distance = a - b;
+		    	float absDistance = abs (distance);
+		    	if (absDistance > 0.5) {
+		    		distance = sign (distance) * (absDistance - 1.0);
+		    	}
+		    	return fract (distance * 0.5 + b);
+		    }
+		    float blendCell (vec4 a, float b) {
+		    	if (a.x > 0.5) {
+		    		return b < 0.0 ? a.z : clerp (a.z, b);
+		    	} else {
+		    		return b;
+		    	}
+		    }
+		    vec4 step (vec4 cell, sampler2D previousStep, sampler2D rules) {
+		    	vec4 n1 = pixelAt (vec2 (-1.0, -1.0));
+		    	vec4 n2 = pixelAt (vec2 ( 0.0, -1.0));
+		    	vec4 n3 = pixelAt (vec2 ( 1.0, -1.0));
+		    	vec4 n4 = pixelAt (vec2 ( 1.0,  0.0));
+		    	vec4 n5 = pixelAt (vec2 ( 1.0,  1.0));
+		    	vec4 n6 = pixelAt (vec2 ( 0.0,  1.0));
+		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
+		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
+		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, 0.0));
+		    	if (cell.x < 0.9 && decision.g > 0.0) {
+			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
+			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
+		    		return vec4 (1.0, 1.0, color, 1.0);
+		    	} else if (cell.x > 0.0 && decision.r > 0.0) {
+		    		return vec4 (0.0, 1.0, cell.z, 1.0);
+		    	} else {
+		    		return cell * vec4 (1.0, 0.994, 1.0, 1.0);
+		    	}
+		    }
+		    void main (void) {
+		    	vec4 cell = pixelAt (vec2 ( 0,  0));
+		    	if (animate) {
+			    	cell = step (cell, cells, rules);
+		    	}
+		    	vec2 texCoord = (((fragmentPosition - origin) / scale) + 1.0) * 0.5;
+		    	vec2 dist = texCoord - vec2 (0.5, 0.5);
+		    	if (dot (dist, dist) > 0.25) {
+		    		gl_FragColor = cell;
+		    	} else {
+		        	vec4 srcCell = texture2D (brush, texCoord);
+		        	if (srcCell.x > 0.5) {
+		        		gl_FragColor = vec4 (1.0, 1.0, srcCell.z, 1.0); /* born */
+		        	} else {
+		        		gl_FragColor = cell;
+		        	}
+		        }
+		    }
+		</script>
+		<script id="cell-brush-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision highp float;
+		    varying vec2 fragmentPosition;
+		    varying vec2 texCoord;
+		    uniform sampler2D cells;
+		    uniform sampler2D rules;
+		    uniform vec2 brushPosition1;
+		    uniform vec2 brushPosition2;
+		    uniform float brushSize;
+		    uniform mat4 pixelSpace;
+		    uniform vec2 screenSpace;
+		    uniform vec2 seed;
+		    uniform bool noise;
+		    uniform bool animate;
+		    uniform float hue;
+		    uniform float fill;
+		    float rand (vec2 co) {
+    			return fract (sin (dot (co.xy ,vec2 (12.9898,78.233))) * 43758.5453) > 0.6 ? 1.0 : 0.0;
+			}
+		    float dotdot (vec2 x) { return dot (x, x); }
+		    float distToSegmentSquared (vec2 v, vec2 w, vec2 p) {
+				float l2 = dotdot (v - w);
+				if (l2 == 0.0) return dotdot (p - v);
+				float t = dot(p - v, w - v) / l2;
+				if (t < 0.0) return dotdot (p - v);
+				else if (t > 1.0) return dotdot (p - w);
+				vec2 projection = v + t * (w - v);
+				return dotdot (p - projection);
+			}
+			vec4 pixelAt (vec2 offset) {
+		    	return texture2D (cells, texCoord + offset * screenSpace);
+		    }
+		    /* circular interpolation */
+		    float clerp (float a, float b) {
+		    	float distance = a - b;
+		    	float absDistance = abs (distance);
+		    	if (absDistance > 0.5) {
+		    		distance = sign (distance) * (absDistance - 1.0);
+		    	}
+		    	return fract (distance * 0.5 + b);
+		    }
+		    float blendCell (vec4 a, float b) {
+		    	if (a.x > 0.5) {
+		    		return b < 0.0 ? a.z : clerp (a.z, b);
+		    	} else {
+		    		return b;
+		    	}
+		    }
+		    vec4 step (vec4 cell, sampler2D previousStep, sampler2D rules) {
+		    	vec4 n1 = pixelAt (vec2 (-1.0, -1.0));
+		    	vec4 n2 = pixelAt (vec2 ( 0.0, -1.0));
+		    	vec4 n3 = pixelAt (vec2 ( 1.0, -1.0));
+		    	vec4 n4 = pixelAt (vec2 ( 1.0,  0.0));
+		    	vec4 n5 = pixelAt (vec2 ( 1.0,  1.0));
+		    	vec4 n6 = pixelAt (vec2 ( 0.0,  1.0));
+		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
+		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
+		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, 0.0));
+		    	if (cell.x < 0.9 && decision.g > 0.0) {
+			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
+			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
+		    		return vec4 (1.0, 1.0, color, 1.0);
+		    	} else if (cell.x > 0.0 && decision.r > 0.0) {
+		    		return vec4 (0.0, 1.0, cell.z, 1.0);
+		    	} else {
+		    		return cell * vec4 (1.0, 0.994, 1.0, 1.0);
+		    	}
+		    }
+		    void main (void) {
+		    	if (distToSegmentSquared (
+		    		(vec4(brushPosition1,1,1)*pixelSpace).xy,
+		    		(vec4(brushPosition2,1,1)*pixelSpace).xy,
+		    		(vec4(fragmentPosition,1,1)*pixelSpace).xy) < brushSize * brushSize) {
+		    		gl_FragColor = vec4 (fill * (noise ? rand (seed + fragmentPosition) : 1.0), 0.98, hue, fill);
+		    	} else {
+		    		vec4 cell = pixelAt (vec2 (0,  0));
+		    		if (animate) {
+				    	gl_FragColor = step (cell, cells, rules);
+			    	} else {
+			    		gl_FragColor = cell;
+			    	}
+		    	}
+		    }
+		</script>
+		<script id="cell-vs-pixeloffset" type="x-shader/x-vertex">
+			#version 100
+			precision highp float;
+		    attribute vec3 position;
+		    uniform vec2 pixelOffset;
+		    varying vec2 fragmentPosition;
+		    varying vec2 texCoord;
+		    void main (void) {
+		    	fragmentPosition = position.xy;
+		    	texCoord = (position.xy + 1.0) * 0.5;
+		        gl_Position = vec4 (position.xy + pixelOffset, 0.0, 1.0);
+		    }
+		</script>
+		<script id="cell-vs" type="x-shader/x-vertex">
+			#version 100
+			precision mediump float;
+		    attribute vec3 position;
+		    varying vec2 fragmentPosition;
+		    varying vec2 texCoord;
+		    void main (void) {
+		    	fragmentPosition = position.xy;
+		    	texCoord = (position.xy + 1.0) * 0.5;
+		        gl_Position = vec4 (position.xy, 0.0, 1.0);
+		    }
+		</script>
+		<script id="draw-cells-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision mediump float;
+		    varying vec2 texCoord;
+		    uniform sampler2D cells;
+		    float pi = 3.14159265358979323846264;
+			vec3 hue (float H)
+			{
+				float R = abs(H * 6.0 - 3.0) - 1.0;
+				float G = 2.0 - abs(H * 6.0 - 2.0);
+				float B = 2.0 - abs(H * 6.0 - 4.0);
+				return clamp(vec3(R,G,B), 0.0, 1.0);
+			}
+			vec3 hsl (float h, float s, float l) {
+				vec3 RGB = hue (h);
+				float C = (1.0 - abs(2.0 * l - 1.0)) * s;
+				return (RGB - 0.5) * C + l;
+			}
+		    void main (void) {
+		    	vec4 cell = texture2D (cells, texCoord);
+		    	float colorOffset = sin(cell.z*pi*6.0);
+		    	gl_FragColor = vec4 (hsl (
+		    		fract (cell.z + cell.x * colorOffset*0.05),
+		    		1.0,
+		    		cell.y * 0.5 + cell.x * (1.0 - abs(colorOffset)) * 0.15) * cell.w, 1.0);
+		    }
+		</script>
+		<script id="brush-selection-cursor-fs" type="x-shader/x-fragment">
+			#version 100
+		    precision mediump float;
+		    varying vec2 texCoord;
+		    uniform sampler2D color;
+		    void main (void) {
+		    	vec4 v = texture2D (color, texCoord);
+		    	gl_FragColor = vec4 (1.0 - v.x, 0.0, 1.0 - v.z, 1.0);
+		    }
+		</script>
+		<script id="simple-vs" type="x-shader/x-vertex">
+			#version 100
+			precision mediump float;
+		    attribute vec3 position;
+		 	varying vec2 texCoord;
+		 	uniform mat4 transform;
+		    void main (void) {
+		    	texCoord = ((position + 1.0) * 0.5).xy;
+		        gl_Position = transform * vec4 (position, 1.0);
+		    }
+		</script>
+	</head>
+	<body>
+		<!-- facebook SDK init { -->
+			<div id="fb-root"></div>
+			<script>
+				window.fbAsyncInit = function () {
+					FB.init({
+						appId      : '292298590870600',
+						channelUrl : 'http://xpl.github.com/channel.html',
+						status     : true,
+						cookie     : false,
+						xfbml      : true
+					})
+				};
+				(function(d){
+					var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+					if (d.getElementById(id)) {return;}
+					js = d.createElement('script'); js.id = id; js.async = true;
+					js.src = "http://connect.facebook.net/en_US/all.js";
+					ref.parentNode.insertBefore(js, ref);
+				}(document));
+			</script>
+		<!-- } facebook SDK init -->
+		<div class="bar controls">
+			<div class="share">
+				<button class="btn btn-inverse btn-share">
+					<i class="icon-share icon-white"></i>like / tweet
+				</button>
+				<div class="dropdown">
+					<div class="fb-like" data-href="http://xpl.github.com/expression/" data-send="false" data-layout="button_count" data-width="100" data-show-faces="true" data-colorscheme="dark"></div>
+					<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://xpl.github.com/expression/">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="http://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+				</div>
+			</div>
+			<button class="btn btn-inverse btn-info"><i class="icon-info-sign icon-white"></i></button>
+			<button class="btn btn-inverse btn-pause" title="hotkey: <strong>space</strong>">
+				<i class="icon-pause icon-white"></i>pause
+			</button>
+			<span class="brush-settings round">
+				<span class="control-label" style="margin-right: 4px;">brush</span>
+				<div class="brush-scale slider"></div>
+				<div class="pattern-brush-scale slider"></div>
+				<span class="control-label" style="margin-right: 4px;">color</span>
+				<div class="brush-color slider"></div>
+				<div class="btn-group brush-type" data-toggle="buttons-radio">
+					<button
+						class="btn btn-inverse noise active"
+						data-brush-type="noise"
+						title="<strong>shift</strong> to erase">round</button>
+					<button
+						class="btn btn-inverse pattern"
+						data-brush-type="pattern"
+						title="press <strong>ALT</strong> on keyboard to select pattern">clone</button>
+				</div>
+			</span>
+			<span class="control-label">size X</span><div class="width slider"></div>
+			<span class="control-label">size Y</span><div class="height slider"></div>
+			<div class="btn-group">
+				<button class="btn btn-inverse reset" title="hotkey: <strong>escape</strong>">reset</button>
+				<button class="btn btn-inverse dropdown-toggle" data-toggle="dropdown" href="javascript:{}">
+					<span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu">
+					<li><a href="javascript:{}" class="reset" data-reset-with="nothing">emptiness</a></li>
+					<li><a href="javascript:{}" class="reset" data-reset-with="noise">random noise</a></li>
+					<li><a href="javascript:{}" class="reset" data-reset-with="turing">universal Turing machine</a></li>
+				</ul>
+			</div>
+			<div class="btn-group" style="margin-left: 0;">
+				<button class="btn btn-inverse btn-rules yes dropdown-toggle">
+					<i class="icon-pencil icon-white"></i>rules
+					<span class="caret"></span>
+				</button>
+				<div class="rules-editor pull-right hide">
+				</div>
+			</div>
+		</div>
+		<div class="viewport-container">
+			<canvas class="viewport"></canvas>
+			<div class="draw-prompt">draw something.</div>
+		</div>
+		<div class="modal no-webgl hide fade" role="dialog">
+			<div class="modal-header">
+				<h3>Whoopsy-daisy, no WebGL support detected</h3>
+			</div>
+			<div class="modal-body">
+				<p>WebGL enables nice and smooth hardware-accelerated graphics for web applications. It is now supported in latest versions of Google Chrome, Firefox or Safari (you may want to update your browser). Not sure about IE.</p>
+				<p style="text-align: center;">
+					<a href="http://google.com/chrome"><img src="chrome-logo.jpg" width="64" height="64"></a>
+					<a href="http://www.mozilla.org/en-US/firefox/"><img src="firefox-logo.jpg" width="64" height="64"></a>
+					<a href="http://www.apple.com/safari/"><img src="safari-logo.jpg" width="64" height="64"></a>
+				</p>
+				<p>If you're in Safari, go to <strong>Preferences</strong>, then to <strong>Advanced</strong> and select <strong>Show Develop menu in menu bar</strong> checkbox at the bottom. Now you can open <strong>Develop</strong> in menu bar and select <strong>Enable WebGL</strong>. You're ready to go!</p>
+			</div>
+			<div class="modal-footer">
+				<a href="http://www.khronos.org/webgl/wiki/Main_Page" class="btn">More info</a>
+			</div>
+		</div>
+		<div class="modal info hide fade" role="dialog">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+				<h3>About</h3>
+			</div>
+			<div class="modal-body">
+				<p>This application is implemented in hardware-accelerated WebGL and is based on a famous cellular automaton known as Conway's Game of Life. Read <a href="http://en.wikipedia.org/wiki/Conway's_Game_of_Life">Wikipedia article</a> about it.</p>
+				<p>Source code available at GitHub: <a href="https://github.com/xpl/expression">https://github.com/xpl/expression</a></p>
+				<p>Send feedback to <a href="http://facebook.com/ololoe">facebook.com/ololoe</a> / <a href="mailto:rocket.mind@gmail.com">rocket.mind@gmail.com</a></p>
+				<p>	
+					<div class="fb-like" data-href="http://xpl.github.com/expression/" data-send="false" data-layout="button_count" data-width="100" data-show-faces="true"></div>
+					<a href="https://twitter.com/share" class="twitter-share-button" data-url="http://xpl.github.com/expression/">Tweet</a>
+<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="http://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+			</div>
+		</div>
+		<div class="modal-overlay loading" style="display:none;">
+			<div class="modal">
+				<h5>loading...</h5>
+			</div>
+		</div>
+		<script type="text/javascript"> var _gaq = _gaq || []; _gaq.push(['_setAccount', 'UA-35679860-1']); _gaq.push(['_trackPageview']);
+			(function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s); })();
+		</script>
+	</body>
+</html>

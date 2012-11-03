@@ -1,0 +1,62 @@
+body, html {
+	-webkit-user-select: none; -moz-user-select: none; -o-user-select: none; -ms-user-select: none; user-select: none;
+	background: black; width: 100%; height: 100%; margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; overflow: hidden;
+}
+
+.viewport-container { width: 100%; height: 100%; display: -webkit-box; display: -moz-box; display: -o-box; display: -ms-box; display: box;
+	-webkit-box-flex: 1; -moz-box-flex: 1; -o-box-flex: 1; -ms-box-flex: 1; box-flex: 1;
+	-webkit-box-orient: vertical; -moz-box-orient: vertical; -o-box-orient: vertical; -ms-box-orient: vertical; box-orient: vertical;
+	-webkit-box-align: center; -moz-box-align: center; -o-box-align: center; -ms-box-align: center; box-align: center;
+	-webkit-box-pack: center; -moz-box-pack: center; -o-box-pack: center; -ms-box-pack: center; box-pack: center;
+}
+
+.viewport-container .viewport { display: block; }
+
+.viewport-container .draw-prompt { text-align: center; font-size: 80px; position: absolute;
+	width: 100%; height: 80px; color: white; top: 50%; margin-top: -30px; pointer-events: none; }
+
+.modal-overlay { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.25); }
+.loading .modal { margin-top: -50px; width: 200px; margin-left: -100px; }
+.loading .modal h5 { text-align: center; }
+
+.bar { position: fixed; width: 100%; padding: 8px 0; text-align: center; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; -o-box-sizing: border-box; -ms-box-sizing: border-box; box-sizing: border-box; }
+
+.bar .control-label { position: relative; top: -1px; display: inline-block; color: white; font-weight: bold; font-size: 10px; background: rgba(0,0,0,0.5); padding: 0px 7px 1px 7px; border-radius: 3px; margin-right: 8px; }
+
+.bar .slider { height: 8px; margin-right: 5px; display: inline-block; width: 70px; position: relative; top: 1px; }
+.bar .ui-slider { background: black !important; border-color: #555555; }
+.bar .ui-slider-handle,
+.bar .ui-slider-handle.ui-state-focus { width: 16px !important; height: 16px !important; background-image: -webkit-linear-gradient(top,#444,#222) !important; background-image: -moz-linear-gradient(top,#444,#222) !important; background-image: linear-gradient(top,#444,#222) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2),0 1px 2px rgba(0, 0, 0, 0.05); border: 1px solid #BBB; border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25) !important; background-color: black; margin-top: -2px; }
+.bar .ui-slider-handle.ui-state-hover,
+.bar .ui-slider-handle.ui-state-active { border-color: white !important; }
+.bar .ui-slider-handle.ui-state-focus { outline: none; border-color: white !important; }
+
+.bar .btn-group { display: inline-block; height: 22px; }
+.bar .btn { font-size: 12px; height: 22px; padding-top: 0px; padding-left: 7px; padding-right: 7px; font-size: 12px;}
+.bar .btn-group.brush-type { margin-right: 5px; margin-left: 2px; }
+
+.bar .brush-settings.round .pattern-brush-scale,
+.bar .brush-settings.noise .pattern-brush-scale { display: none; }
+.bar .brush-settings.pattern .brush-scale { display: none; }
+
+.bar .btn-share i, .btn-pause i, .btn-scroll i, .btn-rules i { margin-top: 0; margin-right: 3px; margin-left: -4px; }
+.bar .btn-info i { margin-top: 3px; }
+.bar .btn-reset { margin-right: 0; }
+
+.bar .btn-scroll .icon-remove { display: none; }
+.bar .btn-scroll.yes .icon-arrow-down { display: none; }
+.bar .btn-scroll.yes .icon-remove { display: inline-block; }
+
+.bar .dropdown-menu { text-align: left; }
+
+.bar .rules-editor { position: absolute; right: -7px; padding: 7px; width: auto; min-width: 0; background: rgba(0,0,0,0.75); border-radius: 3px; }
+.bar .rules-editor .count { margin-right: 5px; font-size: 11px; color: white; vertical-align: middle; }
+.bar .rules-editor .rule { height: 22px; }
+
+.bar .share { display: inline-block; position: relative; }
+.bar .share .btn { position: relative; z-index: 2; }
+.bar .share .dropdown { position: absolute; z-index: 0; width: 100%; border-radius: 3px; top: 0px; padding: 25px 4px 4px 4px; background-color: rgba(0,0,0,0.25); visibility: hidden; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; -o-box-sizing: border-box; -ms-box-sizing: border-box; box-sizing: border-box; }
+.bar .share:hover .dropdown { visibility: visible; }
+.bar .share .fb-like { margin-bottom: 4px; }
+
+.bar .info .twitter-share-button { position: relative; top: 3px; margin-left: 5px; }
