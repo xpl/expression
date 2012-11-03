@@ -266,7 +266,7 @@ Life = _.extends (Viewport, {
 			this.fillWithRandomNoise ()
 		} else if (type == 'turing') {
 			$('.modal-overlay.loading').fadeIn (200)
-			this.resizeBuffers (2048, 2048)
+			this.resizeBuffers (1024, 512)
 			var image = new Image ();
   			image.onload = $.proxy (function () {
   				this.cellBuffer.updateFromImage (image)
@@ -278,7 +278,7 @@ Life = _.extends (Viewport, {
 				}, this)
 				$('.modal-overlay.loading').fadeOut (200)
   			}, this)
-			image.src = 'turing-machine.png';
+			image.src = 'van-gogh.jpg';
 		} else {
 			this.fillWithNothing ()
 		}
