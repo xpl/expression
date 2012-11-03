@@ -77,7 +77,7 @@
 		    	vec4 sourceColor = texture2D (source, texCoord);
 		    	vec3 hsl = RGBToHSL (sourceColor.xyz);
 		    	float alive = hsl.z > 0.5 ? 1.0 : 0.0;
-		        gl_FragColor = vec4 (alive, hsl.y, hsl.x, 1.0);
+		        gl_FragColor = vec4 (alive, alive, hsl.x, 1.0);
 		    }
 		</script>
 		<script id="cell-iteration-fs" type="x-shader/x-fragment">
