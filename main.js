@@ -345,8 +345,9 @@ Life = _.extends (Viewport, {
 			(offset.top - e.clientY) / (this.viewportHeight * 0.5) + 1.0, 0.0]
 	},
 	onZoom: function (e) {
+		var isMac = navigator.platform == 'MacIntel'
 		var zoom = Math.pow (1.03, e.originalEvent.wheelDelta ?
-			(e.originalEvent.wheelDelta / (navigator.platform == 'MacIntel' ? 360.0 : 36.0)) : -e.originalEvent.detail*0.5)
+			(e.originalEvent.wheelDelta / (isMac ? 360.0 : 36.0)) : -e.originalEvent.detail * (isMac ? 0.5 : 1.0))
 		var origin = this.transform.applyInverse (this.eventPoint (e))
 		this.updateTransform (this.transform.multiply (new Transform ()
 			.translate (origin)
