@@ -216,10 +216,11 @@ Life = _.extends (Viewport, {
 				this.activeRules = this.activeRules > 0 ? 0 : 3;
 				$('.multiple-rules-toggle').text ('multiple rules: ' + (this.activeRules > 0 ? 'on' : 'off'))
 				$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
+				$('.ruleset-1').click ()
 			}, this)))
 		var rulesetSwitch = $('<div class="btn-group ruleset-switch" data-toggle="buttons-radio">').appendTo ($('.rules-editor'))
 		rulesetSwitch
-			.append ($('<button class="btn btn-inverse active">#1</button>').click ($.proxy (function () {
+			.append ($('<button class="btn btn-inverse ruleset-1 active">#1</button>').click ($.proxy (function () {
 				this.setCurrentRuleset (0)
 			}, this)))
 			.append ($('<button class="btn btn-inverse">#2</button>').click ($.proxy (function () {
