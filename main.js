@@ -211,13 +211,15 @@ Life = _.extends (Viewport, {
 		$('.btn-rules').click (function () {
 			$('.rules-editor').toggle ()
 		})
-		$('.rules-editor').append ($('<button class="btn preset multiple-rules-toggle btn-inverse">multiple rules: on</button>')
-			.click ($.proxy (function () {
-				this.activeRules = this.activeRules > 0 ? 0 : 3;
-				$('.multiple-rules-toggle').text ('multiple rules: ' + (this.activeRules > 0 ? 'on' : 'off'))
-				$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
-				$('.ruleset-1').click ()
-			}, this)))
+		$('.rules-editor')
+			.append ('<h6>select</h6>')
+			.append ($('<button class="btn preset multiple-rules-toggle btn-inverse">multiple rules: <strong>on</strong></button>')
+				.click ($.proxy (function () {
+					this.activeRules = this.activeRules > 0 ? 0 : 3;
+					$('.multiple-rules-toggle').html ('multiple rules: ' + (this.activeRules > 0 ? '<strong>on</strong>' : 'off'))
+					$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
+					$('.ruleset-1').click ()
+				}, this)))
 		var rulesetSwitch = $('<div class="btn-group ruleset-switch" data-toggle="buttons-radio">').appendTo ($('.rules-editor'))
 		rulesetSwitch
 			.append ($('<button class="btn btn-inverse ruleset-1 active">#1</button>').click ($.proxy (function () {
