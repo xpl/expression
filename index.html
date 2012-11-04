@@ -438,7 +438,6 @@
 				<ul class="dropdown-menu">
 					<li><a href="javascript:{}" class="reset" data-reset-with="nothing">emptiness</a></li>
 					<li><a href="javascript:{}" class="reset" data-reset-with="noise">random noise</a></li>
-					<li><a href="javascript:{}" class="reset" data-reset-with="turing">universal Turing machine</a></li>
 				</ul>
 			</div>
 			<div class="btn-group" style="margin-left: 0;">
@@ -452,7 +451,10 @@
 		</div>
 		<div class="viewport-container">
 			<canvas class="viewport"></canvas>
-			<div class="draw-prompt">draw something.</div>
+			<div class="draw-prompt">
+				<h1>draw something.</h1>
+				<div class="hint">(use scroll to zoom, right mouse to pan)</div>
+			</div>
 		</div>
 		<div class="modal no-webgl hide fade" role="dialog">
 			<div class="modal-header">

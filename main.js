@@ -154,10 +154,10 @@ Life = _.extends (Viewport, {
 	},
 	initGUI: function () {
 		this
-			.slider ('.controls .width', { min: 9, max: 13, value: 10 }, function (value) {
+			.slider ('.controls .width', { min: 9, max: 11, value: 10 }, function (value) {
 				this.resizeBuffers (Math.pow (2, value), this.cellBuffer.height)
 			})
-			.slider ('.controls .height', { min: 9, max: 13, value: 9 }, function (value) {
+			.slider ('.controls .height', { min: 9, max: 11, value: 9 }, function (value) {
 				this.resizeBuffers (this.cellBuffer.width, Math.pow (2, value))
 			})
 			.slider ('.controls .scroll-speed', { min: 0, max: 6, value: 1 }, function (value) {
@@ -208,12 +208,31 @@ Life = _.extends (Viewport, {
 		for (var i = 0; i <= 8; i++) {
 			$('.rules-editor').append (this.ruleUI (i))
 		}
+		$('.rules-editor').append ($('<button class="btn preset btn-inverse">Conway classic</button>').click ($.proxy (function () {
+			this.setRules ([0, 0, 1, 2, 0, 0, 0, 0, 0])
+		}, this)))
+		$('.rules-editor').append ($('<button class="btn preset btn-inverse">default</button>').click ($.proxy (function () {
+			this.setRules ([0, 0, 1, 2, 0, 0, 0, 1, 0])
+		}, this)))
+		$('.rules-editor').append ($('<button class="btn preset btn-inverse">breeder 2</button>').click ($.proxy (function () {
+			this.setRules ([0, 0, 1, 2, 0, 0, 1, 1, 0])
+		}, this)))
+		$('.rules-editor').append ($('<button class="btn preset btn-inverse">thermal sensor</button>').click ($.proxy (function () {
+			this.setRules ([1, 2, 2, 0, 0, 0, 0, 0, 1])
+		}, this)))
+	},
+	setRules: function (rules) {
+		$('.rules-editor .rule').each ($.proxy (function (index, rule) {
+			this.rules[index] = rules[index]
+			rule.updateUI (this.rules[index])
+		}, this))
+		this.rulesBuffer.update (this.genRulesBufferData (this.rules))
 	},
 	ruleUI: function (at) {
 		var rule = $('<div class="rule">').append ($('<span class="count">' + at + ':</span>'))
 		var buttons = $('<div class="btn-group" data-toggle="buttons-radio">').appendTo (rule)
 		var die, keep, born
-		var updateUI = function (value) {
+		var updateUI = rule.get (0).updateUI = function (value) {
 			die.attr ('class', 'btn ' + (value == 0 ? 'active btn-danger' : 'btn-inverse'))
 			keep.attr ('class', 'btn ' + (value == 1 ? 'active btn-info' : 'btn-inverse'))
 			born.attr ('class', 'btn ' + (value == 2 ? 'active btn-success' : 'btn-inverse'))
@@ -258,13 +277,13 @@ Life = _.extends (Viewport, {
 		this.cellBuffer1.resize (w, h)
 		this.cellBuffer2.resize (w, h)
 		$(window).resize ()
-		this.reset ('noise')
+		this.reset ('nothing')
 		this.updateTransform (new Transform ())
 	},
 	reset: function (type) {
 		if (type == 'noise') {
 			this.fillWithRandomNoise ()
-		} else if (type == 'turing') {
+		} else if (type == 'image') {
 			$('.modal-overlay.loading').fadeIn (200)
 			this.resizeBuffers (1024, 512)
 			var image = new Image ();
@@ -338,9 +357,6 @@ Life = _.extends (Viewport, {
 		$('.brush-type .pattern').tooltip ('hide')
 		this.setBrushType ('pattern')
 		this.isCloning = true
-		/*var zoom = Math.max (1, this.getZoom ())
-		var size = Math.min (this.viewportWidth / zoom, this.viewportHeight / zoom)
-		var npot = Math.max (8, Math.pow (2, Math.floor (Math.log2 (size)) - 1))*/
 		this.brushBuffer.resize (this.patternBrushScale, this.patternBrushScale)
 		$(window).mousemove ($.proxy (function (e) {
 			this.cloneStampPosition = this.eventPoint (e)
