@@ -24,20 +24,20 @@ Life = _.extends (Viewport, {
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-iteration-fs',
 				attributes: ['position'],
-				uniforms: ['previousStep', 'screenSpace', 'pixelOffset', 'rules']
+				uniforms: ['previousStep', 'screenSpace', 'pixelOffset', 'rules', 'activeRules']
 			}),
 			parametricBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-brush-fs',
 				attributes: ['position'],
-				uniforms: ['cells', 'rules', 'brushPosition1', 'brushPosition2', 'brushSize', 'seed',
+				uniforms: ['cells', 'rules', 'activeRules', 'brushPosition1', 'brushPosition2', 'brushSize', 'seed',
 					'pixelSpace', 'screenSpace', 'pixelOffset', 'noise', 'fill', 'animate', 'hue']
 			}),
 			patternBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-bake-brush-fs',
 				attributes: ['position'],
-				uniforms: ['brush', 'cells', 'rules', 'origin', 'scale', 'color', 'screenSpace', 'pixelOffset', 'animate']
+				uniforms: ['brush', 'cells', 'rules', 'activeRules', 'origin', 'scale', 'color', 'screenSpace', 'pixelOffset', 'animate']
 			}),
 			copyBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs',
@@ -70,8 +70,12 @@ Life = _.extends (Viewport, {
 			/* rules */
 			rulesBuffer: this.texture ({
 				width: 16,
-				height: 1,
-				data: this.genRulesBufferData (this.rules = [0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+				height: 4,
+				data: this.genRulesBufferData (this.rules = [
+					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0])
 			}),
 			/* buffers */
 			cellBuffer: null, 												// current
@@ -88,6 +92,8 @@ Life = _.extends (Viewport, {
 			brushColor: 0.0,
 			paused: false,
 			brushType: 'noise',
+			activeRules: 3,
+			currentRuleset: 0,
 			/* other stuff */
 			firstFrame: true
 		})
@@ -104,9 +110,9 @@ Life = _.extends (Viewport, {
 	initUserInput: function () {
 		var removePrompt = function () {
 			$('.draw-prompt').remove ()
-			$(document).unbind ('click', removePrompt)
+			$(document).unbind ('mousedown', removePrompt)
 		}
-		$(document).click (removePrompt)
+		$(document).mousedown (removePrompt)
 		$(this.canvas).mousewheel ($.proxy (this.onZoom, this))
 		$(this.canvas).mousedown ($.proxy (function (e) {
 			if (!e.button) {
@@ -205,26 +211,53 @@ Life = _.extends (Viewport, {
 		$('.btn-rules').click (function () {
 			$('.rules-editor').toggle ()
 		})
+		$('.rules-editor').append ($('<button class="btn preset multiple-rules-toggle btn-inverse">multiple rules: on</button>')
+			.click ($.proxy (function () {
+				this.activeRules = this.activeRules > 0 ? 0 : 3;
+				$('.multiple-rules-toggle').text ('multiple rules: ' + (this.activeRules > 0 ? 'on' : 'off'))
+				$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
+			}, this)))
+		var rulesetSwitch = $('<div class="btn-group ruleset-switch" data-toggle="buttons-radio">').appendTo ($('.rules-editor'))
+		rulesetSwitch
+			.append ($('<button class="btn btn-inverse active">#1</button>').click ($.proxy (function () {
+				this.setCurrentRuleset (0)
+			}, this)))
+			.append ($('<button class="btn btn-inverse">#2</button>').click ($.proxy (function () {
+				this.setCurrentRuleset (1)
+			}, this)))
+			.append ($('<button class="btn btn-inverse">#3</button>').click ($.proxy (function () {
+				this.setCurrentRuleset (2)
+			}, this)))
+
+		$('.rules-editor').append ('<h6>rules</h6>')
 		for (var i = 0; i <= 8; i++) {
 			$('.rules-editor').append (this.ruleUI (i))
 		}
-		$('.rules-editor').append ($('<button class="btn preset btn-inverse">Conway classic</button>').click ($.proxy (function () {
-			this.setRules ([0, 0, 1, 2, 0, 0, 0, 0, 0])
-		}, this)))
-		$('.rules-editor').append ($('<button class="btn preset btn-inverse">default</button>').click ($.proxy (function () {
-			this.setRules ([0, 0, 1, 2, 0, 0, 0, 1, 0])
-		}, this)))
-		$('.rules-editor').append ($('<button class="btn preset btn-inverse">breeder 2</button>').click ($.proxy (function () {
-			this.setRules ([0, 0, 1, 2, 0, 0, 1, 1, 0])
-		}, this)))
-		$('.rules-editor').append ($('<button class="btn preset btn-inverse">thermal sensor</button>').click ($.proxy (function () {
-			this.setRules ([1, 2, 2, 0, 0, 0, 0, 0, 1])
-		}, this)))
+		$('.rules-editor')
+			.append ('<h6>presets</h6>')
+			.append ($('<button class="btn preset btn-inverse">Conway classic</button>').click ($.proxy (function () {
+				this.setRules ([0, 0, 1, 2, 0, 0, 0, 0, 0])
+			}, this)))
+			.append ($('<button class="btn preset btn-inverse">default</button>').click ($.proxy (function () {
+				this.setRules ([0, 0, 1, 2, 0, 0, 0, 1, 0])
+			}, this)))
+			.append ($('<button class="btn preset btn-inverse">breeder 2</button>').click ($.proxy (function () {
+				this.setRules ([0, 0, 1, 2, 0, 0, 1, 1, 0])
+			}, this)))
+			.append ($('<button class="btn preset btn-inverse">thermal sensor</button>').click ($.proxy (function () {
+				this.setRules ([1, 2, 2, 0, 0, 0, 0, 0, 1])
+			}, this)))
+	},
+	setCurrentRuleset: function (i) {
+		this.currentRuleset = i
+		$('.rules-editor .rule').each ($.proxy (function (index, rule) {
+			rule.updateUI (this.rules[i * 16 + index])
+		}, this))
 	},
 	setRules: function (rules) {
 		$('.rules-editor .rule').each ($.proxy (function (index, rule) {
-			this.rules[index] = rules[index]
-			rule.updateUI (this.rules[index])
+			this.rules[this.currentRuleset * 16 + index] = rules[index]
+			rule.updateUI (this.rules[this.currentRuleset * 16 + index])
 		}, this))
 		this.rulesBuffer.update (this.genRulesBufferData (this.rules))
 	},
@@ -238,7 +271,7 @@ Life = _.extends (Viewport, {
 			born.attr ('class', 'btn ' + (value == 2 ? 'active btn-success' : 'btn-inverse'))
 		}
 		var commit = $.proxy (function (value) {
-			this.rules[at] = value
+			this.rules[this.currentRuleset * 16 + at] = value
 			this.rulesBuffer.update (this.genRulesBufferData (this.rules))
 		}, this)
 		die = $('<button class="btn">die</button>').click (function () { updateUI (0); commit (0); }).appendTo (buttons)
@@ -446,6 +479,7 @@ Life = _.extends (Viewport, {
 			this.iterationShader.attributes.position.bindBuffer (this.square)
 			this.iterationShader.uniforms.previousStep.bindTexture (this.cellBuffer, 0)
 			this.iterationShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
+			this.iterationShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
 			this.iterationShader.uniforms.screenSpace.set2f (1.0 / this.cellBuffer.width, 1.0 / this.cellBuffer.height)
 			this.iterationShader.uniforms.pixelOffset.set2f (
 				0.0 / this.cellBuffer.width,
@@ -468,6 +502,7 @@ Life = _.extends (Viewport, {
 			this.patternBrushShader.attributes.position.bindBuffer (this.square)
 			this.patternBrushShader.uniforms.cells.bindTexture (this.cellBuffer, 0)
 			this.patternBrushShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
+			this.patternBrushShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
 			this.patternBrushShader.uniforms.brush.bindTexture (this.brushBuffer, 2)
 			this.patternBrushShader.uniforms.pixelOffset.set2f (0.0,
 				animate ? (-(0.5 + this.scrollSpeed * !this.firstFrame) / this.cellBuffer.height) : 0.0)
@@ -493,6 +528,7 @@ Life = _.extends (Viewport, {
 			this.parametricBrushShader.attributes.position.bindBuffer (this.square)
 			this.parametricBrushShader.uniforms.cells.bindTexture (this.cellBuffer, 0)
 			this.parametricBrushShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
+			this.parametricBrushShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
 			this.parametricBrushShader.uniforms.brushPosition1.set2fv (this.screenTransform.applyInverse (this.paintFrom))
 			this.parametricBrushShader.uniforms.brushPosition2.set2fv (this.screenTransform.applyInverse (this.paintTo))
 			this.parametricBrushShader.uniforms.pixelSpace.setMatrix (pixelSpace)

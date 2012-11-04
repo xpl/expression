@@ -87,6 +87,7 @@
 		    uniform sampler2D previousStep;
 		    uniform vec2 screenSpace;
 		    uniform sampler2D rules;
+		    uniform float activeRules;
 		    vec4 pixelAt (vec2 offset) {
 		    	return texture2D (previousStep, texCoord + offset * screenSpace);
 		    }
@@ -106,7 +107,7 @@
 		    		return b;
 		    	}
 		    }
-		    vec4 step (vec4 cell, sampler2D previousStep, sampler2D rules) {
+		    vec4 step (vec4 cell, sampler2D previousStep) {
 		    	vec4 n1 = pixelAt (vec2 (-1.0, -1.0));
 		    	vec4 n2 = pixelAt (vec2 ( 0.0, -1.0));
 		    	vec4 n3 = pixelAt (vec2 ( 1.0, -1.0));
@@ -116,7 +117,7 @@
 		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
 		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
 		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
-		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, 0.0));
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, fract (cell.z * 6.0) * (activeRules / 4.0)));
 		    	if (cell.x < 0.9 && decision.g > 0.0) {
 			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
 			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
@@ -128,7 +129,8 @@
 		    	}
 		    }
 		    void main (void) {
-		    	gl_FragColor = step (pixelAt (vec2 ( 0,  0)), previousStep, rules);
+		    	//gl_FragColor = vec4 (texture2D (rules, texCoord).xyz, 1.0);
+		    	gl_FragColor = step (pixelAt (vec2 ( 0,  0)), previousStep);
 		    }
 		</script>
 		<script id="cell-copy-brush-fs" type="x-shader/x-fragment">
@@ -150,6 +152,7 @@
 		    uniform sampler2D cells;
 		    uniform sampler2D brush;
 		    uniform sampler2D rules;
+		    uniform float activeRules;
 		    uniform vec2 screenSpace;
 		    uniform vec2 origin;
 		    uniform vec2 scale;
@@ -174,7 +177,7 @@
 		    		return b;
 		    	}
 		    }
-		    vec4 step (vec4 cell, sampler2D previousStep, sampler2D rules) {
+		    vec4 step (vec4 cell, sampler2D previousStep) {
 		    	vec4 n1 = pixelAt (vec2 (-1.0, -1.0));
 		    	vec4 n2 = pixelAt (vec2 ( 0.0, -1.0));
 		    	vec4 n3 = pixelAt (vec2 ( 1.0, -1.0));
@@ -184,7 +187,7 @@
 		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
 		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
 		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
-		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, 0.0));
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, fract (cell.z * 6.0) * (activeRules / 4.0)));
 		    	if (cell.x < 0.9 && decision.g > 0.0) {
 			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
 			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
@@ -198,7 +201,7 @@
 		    void main (void) {
 		    	vec4 cell = pixelAt (vec2 ( 0,  0));
 		    	if (animate) {
-			    	cell = step (cell, cells, rules);
+			    	cell = step (cell, cells);
 		    	}
 		    	vec2 texCoord = (((fragmentPosition - origin) / scale) + 1.0) * 0.5;
 		    	vec2 dist = texCoord - vec2 (0.5, 0.5);
@@ -221,6 +224,7 @@
 		    varying vec2 texCoord;
 		    uniform sampler2D cells;
 		    uniform sampler2D rules;
+		    uniform float activeRules;
 		    uniform vec2 brushPosition1;
 		    uniform vec2 brushPosition2;
 		    uniform float brushSize;
@@ -263,7 +267,7 @@
 		    		return b;
 		    	}
 		    }
-		    vec4 step (vec4 cell, sampler2D previousStep, sampler2D rules) {
+		    vec4 step (vec4 cell, sampler2D previousStep) {
 		    	vec4 n1 = pixelAt (vec2 (-1.0, -1.0));
 		    	vec4 n2 = pixelAt (vec2 ( 0.0, -1.0));
 		    	vec4 n3 = pixelAt (vec2 ( 1.0, -1.0));
@@ -273,7 +277,7 @@
 		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
 		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
 		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
-		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, 0.0));
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, fract (cell.z * 6.0) * (activeRules / 4.0)));
 		    	if (cell.x < 0.9 && decision.g > 0.0) {
 			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
 			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
@@ -293,7 +297,7 @@
 		    	} else {
 		    		vec4 cell = pixelAt (vec2 (0,  0));
 		    		if (animate) {
-				    	gl_FragColor = step (cell, cells, rules);
+				    	gl_FragColor = step (cell, cells);
 			    	} else {
 			    		gl_FragColor = cell;
 			    	}

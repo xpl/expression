@@ -56,6 +56,10 @@ body, html {
 .bar .rules-editor .count { margin-right: 5px; font-size: 11px; color: white; vertical-align: middle; }
 .bar .rules-editor .rule { height: 22px; }
 .bar .rules-editor .btn.preset { margin-top: 2px; width: 112px; margin-left: 14px; display: block; }
+.bar .rules-editor .ruleset-switch { margin-left: 14px; display: block; }
+.bar .rules-editor .ruleset-switch .btn { width: 38px; }
+.bar .rules-editor h6 { font-size: 11px; color: white; text-align: center; opacity: 0.5; margin-bottom: 0px; margin-top: 5px; }
+.bar .rules-editor .btn.preset.multiple-rules-toggle { margin-top: 0; margin-bottom: 2px; }
 
 .bar .share { display: inline-block; position: relative; }
 .bar .share .btn { position: relative; z-index: 2; }
