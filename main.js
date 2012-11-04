@@ -591,4 +591,4 @@ $(document).ready (function () {
 	var life = new Life ({
 		canvas: $('.viewport').get (0)
 	})
-})
+]})
