@@ -73,9 +73,9 @@ Life = _.extends (Viewport, {
 				height: 4,
 				data: this.genRulesBufferData (this.rules = [
 					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-					0, 0, 1, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0])
+					1, 0, 2, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0])
 			}),
 			/* buffers */
 			cellBuffer: null, 												// current
@@ -92,7 +92,7 @@ Life = _.extends (Viewport, {
 			brushColor: 0.0,
 			paused: false,
 			brushType: 'noise',
-			activeRules: 3,
+			activeRules: 0,
 			currentRuleset: 0,
 			/* other stuff */
 			firstFrame: true
@@ -211,45 +211,27 @@ Life = _.extends (Viewport, {
 		$('.btn-rules').click (function () {
 			$('.rules-editor').toggle ()
 		})
-		$('.rules-editor')
-			.append ('<h6>select</h6>')
-			.append ($('<button class="btn preset multiple-rules-toggle btn-inverse">multiple rules: <strong>on</strong></button>')
-				.click ($.proxy (function () {
-					this.activeRules = this.activeRules > 0 ? 0 : 3;
-					$('.multiple-rules-toggle').html ('multiple rules: ' + (this.activeRules > 0 ? '<strong>on</strong>' : 'off'))
-					$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
-					$('.ruleset-1').click ()
-				}, this)))
-		var rulesetSwitch = $('<div class="btn-group ruleset-switch" data-toggle="buttons-radio">').appendTo ($('.rules-editor'))
-		rulesetSwitch
-			.append ($('<button class="btn btn-inverse ruleset-1 active">#1</button>').click ($.proxy (function () {
-				this.setCurrentRuleset (0)
-			}, this)))
-			.append ($('<button class="btn btn-inverse">#2</button>').click ($.proxy (function () {
-				this.setCurrentRuleset (1)
-			}, this)))
-			.append ($('<button class="btn btn-inverse">#3</button>').click ($.proxy (function () {
-				this.setCurrentRuleset (2)
-			}, this)))
-
-		$('.rules-editor').append ('<h6>rules</h6>')
+		$('.multiple-rules-toggle').click ($.proxy (function () {
+			this.activeRules = this.activeRules > 0 ? 0 : 3;
+			$('.multiple-rules-toggle').html ('multiple rules: ' + (this.activeRules > 0 ? '<strong>on</strong>' : 'off'))
+			$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
+			$('.ruleset-1').click ()
+		}, this))
+		$('.ruleset-switch .btn').each ($.proxy (function (index, btn) {
+			$(btn).click ($.proxy (function () {
+				this.setCurrentRuleset (index)
+			}, this))
+		}, this))
 		for (var i = 0; i <= 8; i++) {
-			$('.rules-editor').append (this.ruleUI (i))
+			$('.rules-editor .rules').append (this.ruleUI (i))
 		}
-		$('.rules-editor')
-			.append ('<h6>presets</h6>')
-			.append ($('<button class="btn preset btn-inverse">Conway classic</button>').click ($.proxy (function () {
-				this.setRules ([0, 0, 1, 2, 0, 0, 0, 0, 0])
-			}, this)))
-			.append ($('<button class="btn preset btn-inverse">default</button>').click ($.proxy (function () {
-				this.setRules ([0, 0, 1, 2, 0, 0, 0, 1, 0])
-			}, this)))
-			.append ($('<button class="btn preset btn-inverse">breeder 2</button>').click ($.proxy (function () {
-				this.setRules ([0, 0, 1, 2, 0, 0, 1, 1, 0])
-			}, this)))
-			.append ($('<button class="btn preset btn-inverse">thermal sensor</button>').click ($.proxy (function () {
-				this.setRules ([1, 2, 2, 0, 0, 0, 0, 0, 1])
-			}, this)))
+		$('.rules-editor .presets .btn').each ($.proxy (function (index, btn) {
+			$(btn).click ($.proxy (function () {
+				this.setRules (_.map ($(btn).attr ('data-rules').split (' '), function (i) {
+					return parseInt (i)
+				}))
+			}, this))
+		}, this))
 	},
 	setCurrentRuleset: function (i) {
 		this.currentRuleset = i
