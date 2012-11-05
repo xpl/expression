@@ -24,20 +24,21 @@ Life = _.extends (Viewport, {
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-iteration-fs',
 				attributes: ['position'],
-				uniforms: ['previousStep', 'screenSpace', 'pixelOffset', 'rules', 'activeRules']
+				uniforms: ['previousStep', 'rulesOffset', 'screenSpace', 'pixelOffset', 'rules', 'activeRules']
 			}),
 			parametricBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-brush-fs',
 				attributes: ['position'],
-				uniforms: ['cells', 'rules', 'activeRules', 'brushPosition1', 'brushPosition2', 'brushSize', 'seed',
+				uniforms: ['cells', 'rules', 'rulesOffset', 'activeRules', 'brushPosition1', 'brushPosition2', 'brushSize', 'seed',
 					'pixelSpace', 'screenSpace', 'pixelOffset', 'noise', 'fill', 'animate', 'hue']
 			}),
 			patternBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-bake-brush-fs',
 				attributes: ['position'],
-				uniforms: ['brush', 'cells', 'rules', 'activeRules', 'origin', 'scale', 'color', 'screenSpace', 'pixelOffset', 'animate']
+				uniforms: ['brush', 'cells', 'rulesOffset', 'rules', 'activeRules', 'origin',
+					'scale', 'color', 'screenSpace', 'pixelOffset', 'animate']
 			}),
 			copyBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs',
@@ -136,6 +137,9 @@ Life = _.extends (Viewport, {
 						this.onCloneStart (e);
 					}
 					break;
+				case 49: /* 1 */ $('.ruleset-1').click (); break;
+				case 50: /* 2 */ $('.ruleset-2').click (); break;
+				case 51: /* 3 */ $('.ruleset-3').click (); break;
 				case 78: /* n */ this.setBrushType ('noise'); break;
 				case 32: /* space */ this.paused = !this.paused; break;
 				case 27: /* esc */ this.reset ('nothing'); $('.controls .scroll-speed').slider ('value', this.scrollSpeed = 0); break;
@@ -214,8 +218,8 @@ Life = _.extends (Viewport, {
 		$('.multiple-rules-toggle').click ($.proxy (function () {
 			this.activeRules = this.activeRules > 0 ? 0 : 3;
 			$('.multiple-rules-toggle').html ('multiple rules: ' + (this.activeRules > 0 ? '<strong>on</strong>' : 'off'))
-			$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
-			$('.ruleset-1').click ()
+			//$('.ruleset-switch .btn').toggleClass ('disabled', !(this.activeRules > 0))
+			//$('.ruleset-1').click ()
 		}, this))
 		$('.ruleset-switch .btn').each ($.proxy (function (index, btn) {
 			$(btn).click ($.proxy (function () {
@@ -466,6 +470,7 @@ Life = _.extends (Viewport, {
 			this.iterationShader.uniforms.previousStep.bindTexture (this.cellBuffer, 0)
 			this.iterationShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
 			this.iterationShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
+			this.iterationShader.uniforms.rulesOffset.set1f (this.activeRules > 0 ? 0.0 : (this.currentRuleset / 4.0))
 			this.iterationShader.uniforms.screenSpace.set2f (1.0 / this.cellBuffer.width, 1.0 / this.cellBuffer.height)
 			this.iterationShader.uniforms.pixelOffset.set2f (
 				0.0 / this.cellBuffer.width,
@@ -489,6 +494,7 @@ Life = _.extends (Viewport, {
 			this.patternBrushShader.uniforms.cells.bindTexture (this.cellBuffer, 0)
 			this.patternBrushShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
 			this.patternBrushShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
+			this.patternBrushShader.uniforms.rulesOffset.set1f (this.activeRules > 0 ? 0.0 : (this.currentRuleset / 4.0))
 			this.patternBrushShader.uniforms.brush.bindTexture (this.brushBuffer, 2)
 			this.patternBrushShader.uniforms.pixelOffset.set2f (0.0,
 				animate ? (-(0.5 + this.scrollSpeed * !this.firstFrame) / this.cellBuffer.height) : 0.0)
@@ -515,6 +521,7 @@ Life = _.extends (Viewport, {
 			this.parametricBrushShader.uniforms.cells.bindTexture (this.cellBuffer, 0)
 			this.parametricBrushShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
 			this.parametricBrushShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
+			this.parametricBrushShader.uniforms.rulesOffset.set1f (this.activeRules > 0 ? 0.0 : (this.currentRuleset / 4.0))
 			this.parametricBrushShader.uniforms.brushPosition1.set2fv (this.screenTransform.applyInverse (this.paintFrom))
 			this.parametricBrushShader.uniforms.brushPosition2.set2fv (this.screenTransform.applyInverse (this.paintTo))
 			this.parametricBrushShader.uniforms.pixelSpace.setMatrix (pixelSpace)

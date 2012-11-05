@@ -89,6 +89,7 @@
 		    uniform vec2 screenSpace;
 		    uniform sampler2D rules;
 		    uniform float activeRules;
+		    uniform float rulesOffset;
 		    vec4 pixelAt (vec2 offset) {
 		    	return texture2D (previousStep, texCoord + offset * screenSpace);
 		    }
@@ -118,7 +119,7 @@
 		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
 		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
 		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
-		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, fract (cell.z * 6.0) * (activeRules / 4.0)));
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, rulesOffset + fract (cell.z * 6.0) * (activeRules / 4.0)));
 		    	if (cell.x < 0.9 && decision.g > 0.0) {
 			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
 			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
@@ -154,6 +155,7 @@
 		    uniform sampler2D brush;
 		    uniform sampler2D rules;
 		    uniform float activeRules;
+		    uniform float rulesOffset;
 		    uniform vec2 screenSpace;
 		    uniform vec2 origin;
 		    uniform vec2 scale;
@@ -188,7 +190,7 @@
 		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
 		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
 		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
-		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, fract (cell.z * 6.0) * (activeRules / 4.0)));
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, rulesOffset + fract (cell.z * 6.0) * (activeRules / 4.0)));
 		    	if (cell.x < 0.9 && decision.g > 0.0) {
 			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
 			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
@@ -226,6 +228,7 @@
 		    uniform sampler2D cells;
 		    uniform sampler2D rules;
 		    uniform float activeRules;
+		    uniform float rulesOffset;
 		    uniform vec2 brushPosition1;
 		    uniform vec2 brushPosition2;
 		    uniform float brushSize;
@@ -278,7 +281,7 @@
 		    	vec4 n7 = pixelAt (vec2 (-1.0,  1.0));
 		    	vec4 n8 = pixelAt (vec2 (-1.0,  0.0));
 		    	float sum = n1.x + n2.x + n3.x + n4.x + n5.x + n6.x + n7.x + n8.x;
-		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, fract (cell.z * 6.0) * (activeRules / 4.0)));
+		    	vec4 decision = texture2D (rules, vec2 (sum / 16.0, rulesOffset + fract (cell.z * 6.0) * (activeRules / 4.0)));
 		    	if (cell.x < 0.9 && decision.g > 0.0) {
 			    	float color = blendCell (n1, blendCell (n2, blendCell (n3, blendCell (n4,
 			    					blendCell (n5, blendCell (n6, blendCell (n7, blendCell (n8, -1.0))))))));
@@ -454,9 +457,9 @@
 					<h6>select</h6>
 					<button class="btn preset multiple-rules-toggle btn-inverse">multiple rules: off</button>
 					<div class="btn-group ruleset-switch" data-toggle="buttons-radio">
-						<button class="btn btn-inverse disabled ruleset-1 active">#1</button>
-						<button class="btn btn-inverse disabled ruleset-2">#2</button>
-						<button class="btn btn-inverse disabled ruleset-3">#3</button>
+						<button class="btn btn-inverse ruleset-1 active" title="hotkey: <strong>1</strong>">#1</button>
+						<button class="btn btn-inverse ruleset-2" title="hotkey: <strong>2</strong>">#2</button>
+						<button class="btn btn-inverse ruleset-3" title="hotkey: <strong>3</strong>">#3</button>
 					</div>
 					<h6>rules</h6>
 					<div class="rules">
