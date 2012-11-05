@@ -554,7 +554,6 @@ Life = _.extends (Viewport, {
 	},
 	draw: function () {
 		this.gl.disable (this.gl.DEPTH_TEST)
-		this.gl.clear (this.gl.COLOR_BUFFER_BIT)
 		this.drawCellsShader.use ()
 		this.drawCellsShader.attributes.position.bindBuffer (this.square)
 		this.drawCellsShader.uniforms.transform.setMatrix (this.screenTransform)
