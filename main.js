@@ -185,8 +185,8 @@ Life = _.extends (Viewport, {
 				this.brushColor = value / 100.0;
 				slider.find ('a').attr ('style', value > 0 ? 'background:' + this.hueToCSSColor (this.brushColor) + ' !important;' : '')
 			})
-			.slider ('.controls .swirl', { value: 0, min: 0, max: 3 }, function (value, slider) {
-				this.swirlFactor = Math.pow (2.0, [-10, -4, -3, -2][value]);
+			.slider ('.controls .swirl', { value: 1, min: 0, max: 4 }, function (value, slider) {
+				this.swirlFactor = value == 0 ? 0 : Math.pow (2.0, [-20, -10, -4, -3, -2][value]);
 			})
 		$('.reset')
 			.click ($.proxy (function (e) {
