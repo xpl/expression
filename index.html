@@ -90,18 +90,19 @@
 		    uniform sampler2D rules;
 		    uniform float activeRules;
 		    uniform float rulesOffset;
+		    uniform float swirlFactor;
 		    vec4 pixelAt (vec2 offset) {
 		    	return texture2D (previousStep, texCoord + offset * screenSpace);
 		    }
 		    /* circular interpolation */
-		    float clerp (float a, float b) {
-		    	float distance = a - b;
-		    	float absDistance = abs (distance);
-		    	if (absDistance > 0.5) {
-		    		distance = sign (distance) * (absDistance - 1.0);
-		    	}
-		    	return fract (distance * 0.5 + b);
-		    }
+			float clerp (float a, float b) {
+			    float distance = a - b;
+			    float absDistance = abs (distance);
+			    if (absDistance > 0.5) {
+			        distance = sign (distance) * (absDistance - 1.0);
+			    }
+			    return fract (distance * (0.5 - sign (distance)*swirlFactor) + b);
+			}
 		    float blendCell (vec4 a, float b) {
 		    	if (a.x > 0.5) {
 		    		return b < 0.0 ? a.z : clerp (a.z, b);
@@ -156,6 +157,7 @@
 		    uniform sampler2D rules;
 		    uniform float activeRules;
 		    uniform float rulesOffset;
+		    uniform float swirlFactor;
 		    uniform vec2 screenSpace;
 		    uniform vec2 origin;
 		    uniform vec2 scale;
@@ -165,14 +167,14 @@
 		    	return texture2D (cells, texCoord + offset * screenSpace);
 		    }
 		    /* circular interpolation */
-		    float clerp (float a, float b) {
-		    	float distance = a - b;
-		    	float absDistance = abs (distance);
-		    	if (absDistance > 0.5) {
-		    		distance = sign (distance) * (absDistance - 1.0);
-		    	}
-		    	return fract (distance * 0.5 + b);
-		    }
+			float clerp (float a, float b) {
+			    float distance = a - b;
+			    float absDistance = abs (distance);
+			    if (absDistance > 0.5) {
+			        distance = sign (distance) * (absDistance - 1.0);
+			    }
+			    return fract (distance * (0.5 - sign (distance)*swirlFactor) + b);
+			}
 		    float blendCell (vec4 a, float b) {
 		    	if (a.x > 0.5) {
 		    		return b < 0.0 ? a.z : clerp (a.z, b);
@@ -229,6 +231,7 @@
 		    uniform sampler2D rules;
 		    uniform float activeRules;
 		    uniform float rulesOffset;
+		    uniform float swirlFactor;
 		    uniform vec2 brushPosition1;
 		    uniform vec2 brushPosition2;
 		    uniform float brushSize;
@@ -256,14 +259,14 @@
 		    	return texture2D (cells, texCoord + offset * screenSpace);
 		    }
 		    /* circular interpolation */
-		    float clerp (float a, float b) {
-		    	float distance = a - b;
-		    	float absDistance = abs (distance);
-		    	if (absDistance > 0.5) {
-		    		distance = sign (distance) * (absDistance - 1.0);
-		    	}
-		    	return fract (distance * 0.5 + b);
-		    }
+			float clerp (float a, float b) {
+			    float distance = a - b;
+			    float absDistance = abs (distance);
+			    if (absDistance > 0.5) {
+			        distance = sign (distance) * (absDistance - 1.0);
+			    }
+			    return fract (distance * (0.5 - sign (distance)*swirlFactor) + b);
+			}
 		    float blendCell (vec4 a, float b) {
 		    	if (a.x > 0.5) {
 		    		return b < 0.0 ? a.z : clerp (a.z, b);
@@ -436,6 +439,7 @@
 						title="press <strong>ALT</strong> on keyboard to select pattern">clone</button>
 				</div>
 			</span>
+			<span class="control-label">swirl</span><div class="swirl slider"></div>
 			<span class="control-label">size X</span><div class="width slider"></div>
 			<span class="control-label">size Y</span><div class="height slider"></div>
 			<div class="btn-group">

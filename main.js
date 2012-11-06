@@ -24,20 +24,21 @@ Life = _.extends (Viewport, {
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-iteration-fs',
 				attributes: ['position'],
-				uniforms: ['previousStep', 'rulesOffset', 'screenSpace', 'pixelOffset', 'rules', 'activeRules']
+				uniforms: ['previousStep', 'rulesOffset', 'screenSpace', 'pixelOffset', 'rules', 'activeRules', 'swirlFactor']
 			}),
 			parametricBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-brush-fs',
 				attributes: ['position'],
-				uniforms: ['cells', 'rules', 'rulesOffset', 'activeRules', 'brushPosition1', 'brushPosition2', 'brushSize', 'seed',
+				uniforms: ['cells', 'rules', 'rulesOffset', 'activeRules', 'swirlFactor',
+					'brushPosition1', 'brushPosition2', 'brushSize', 'seed',
 					'pixelSpace', 'screenSpace', 'pixelOffset', 'noise', 'fill', 'animate', 'hue']
 			}),
 			patternBrushShader: this.shaderProgram ({
 				vertex: 'cell-vs-pixeloffset',
 				fragment: 'cell-bake-brush-fs',
 				attributes: ['position'],
-				uniforms: ['brush', 'cells', 'rulesOffset', 'rules', 'activeRules', 'origin',
+				uniforms: ['brush', 'cells', 'rulesOffset', 'rules', 'activeRules', 'swirlFactor', 'origin',
 					'scale', 'color', 'screenSpace', 'pixelOffset', 'animate']
 			}),
 			copyBrushShader: this.shaderProgram ({
@@ -95,6 +96,7 @@ Life = _.extends (Viewport, {
 			brushType: 'noise',
 			activeRules: 0,
 			currentRuleset: 0,
+			swirlFactor: Math.pow (2.0, -10),
 			/* other stuff */
 			firstFrame: true
 		})
@@ -182,6 +184,9 @@ Life = _.extends (Viewport, {
 			.slider ('.controls .brush-color', { min: 0, max: 100, value: 0, step: 1 }, function (value, slider) {
 				this.brushColor = value / 100.0;
 				slider.find ('a').attr ('style', value > 0 ? 'background:' + this.hueToCSSColor (this.brushColor) + ' !important;' : '')
+			})
+			.slider ('.controls .swirl', { value: 0, min: 0, max: 3 }, function (value, slider) {
+				this.swirlFactor = Math.pow (2.0, [-10, -4, -3, -2][value]);
 			})
 		$('.reset')
 			.click ($.proxy (function (e) {
@@ -469,6 +474,7 @@ Life = _.extends (Viewport, {
 			this.iterationShader.attributes.position.bindBuffer (this.square)
 			this.iterationShader.uniforms.previousStep.bindTexture (this.cellBuffer, 0)
 			this.iterationShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
+			this.iterationShader.uniforms.swirlFactor.set1f (this.swirlFactor * 1.0)
 			this.iterationShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
 			this.iterationShader.uniforms.rulesOffset.set1f (this.activeRules > 0 ? 0.0 : (this.currentRuleset / 4.0))
 			this.iterationShader.uniforms.screenSpace.set2f (1.0 / this.cellBuffer.width, 1.0 / this.cellBuffer.height)
@@ -493,6 +499,7 @@ Life = _.extends (Viewport, {
 			this.patternBrushShader.attributes.position.bindBuffer (this.square)
 			this.patternBrushShader.uniforms.cells.bindTexture (this.cellBuffer, 0)
 			this.patternBrushShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
+			this.patternBrushShader.uniforms.swirlFactor.set1f (this.swirlFactor * 1.0)
 			this.patternBrushShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
 			this.patternBrushShader.uniforms.rulesOffset.set1f (this.activeRules > 0 ? 0.0 : (this.currentRuleset / 4.0))
 			this.patternBrushShader.uniforms.brush.bindTexture (this.brushBuffer, 2)
@@ -520,6 +527,7 @@ Life = _.extends (Viewport, {
 			this.parametricBrushShader.attributes.position.bindBuffer (this.square)
 			this.parametricBrushShader.uniforms.cells.bindTexture (this.cellBuffer, 0)
 			this.parametricBrushShader.uniforms.rules.bindTexture (this.rulesBuffer, 1)
+			this.parametricBrushShader.uniforms.swirlFactor.set1f (this.swirlFactor * 1.0)
 			this.parametricBrushShader.uniforms.activeRules.set1f (this.activeRules * 1.0)
 			this.parametricBrushShader.uniforms.rulesOffset.set1f (this.activeRules > 0 ? 0.0 : (this.currentRuleset / 4.0))
 			this.parametricBrushShader.uniforms.brushPosition1.set2fv (this.screenTransform.applyInverse (this.paintFrom))
