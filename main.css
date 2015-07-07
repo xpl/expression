@@ -63,8 +63,8 @@ body, html {
 
 .bar .share { display: inline-block; position: relative; }
 .bar .share .btn { position: relative; z-index: 2; }
-.bar .share .dropdown { position: absolute; z-index: 0; width: 100%; border-radius: 3px; top: 0px; padding: 25px 4px 4px 4px; background-color: rgba(0,0,0,0.25); visibility: hidden; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; -o-box-sizing: border-box; -ms-box-sizing: border-box; box-sizing: border-box; }
-.bar .share:hover .dropdown { visibility: visible; }
+.bar .share .dropdown { position: absolute; z-index: 0; width: 100%; border-radius: 3px; top: 0px; padding: 25px 4px 4px 4px; background-color: rgba(0,0,0,0.25); display: none; -webkit-box-sizing: border-box; -moz-box-sizing: border-box; -o-box-sizing: border-box; -ms-box-sizing: border-box; box-sizing: border-box; }
+.bar .share:hover .dropdown { display: block; }
 .bar .share .fb-like { margin-bottom: 4px; }
 
 .bar .info .twitter-share-button { position: relative; top: 3px; margin-left: 5px; }
