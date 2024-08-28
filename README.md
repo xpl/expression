@@ -1,6 +1,6 @@
 An interactive paint application driven by cellular automation. Written in WebGL and pixel shaders.
 
-# [SEE IT LIVE ON GITHUB PAGES](https://xpl.github.com/expression)
+# [SEE IT LIVE ON GITHUB PAGES](https://xpl.github.io/expression)
 
 **With `multiple rules: on`** (toggleable in the UI):
 
